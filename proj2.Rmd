@@ -1,0 +1,1351 @@
+---
+title: 
+    "Severe Weather Events in the United States: \\newline{} Decisive Reasons"
+author:
+    "Eduardo B. Díez"
+date: "July 23, 2014"
+output:
+  pdf_document:
+    highlight: kate
+    keep_tex: yes
+    natbib: no
+    biblatex: no
+    toc: false
+    toc_depth: 2
+    number_sections: true
+    fig_caption: yes
+lang: spanish, american
+biblio-files: SevereBib.bib
+biblio-style: plain
+biblio-title: Referencias
+csl: acm-sig-proceedings-long-author-list.csl
+#bibliography: SevereBib.bib
+#
+#
+citecolor: magenta
+urlcolor: blue
+linkcolor: red
+euro: yes
+includes:
+  after_body: ~\pandoc-templates\doc_suffix.tex
+  before_body: ~\pandoc-templates\doc_prefix.tex
+  in_header: ~\pandoc-templates\header.tex
+listings: no
+#
+geometry: margin=1.45in
+papersize: b4paper, onecolumn, lmargin=1cm, rmargin=1cm, tmargin=1cm, bmargin=2cm
+documentclass: article
+fontsize: 12pt
+#
+verbatim-in-note: no
+lhs: no
+# anycase, cite everyone
+nocite: |
+  @peng_storm,
+  @noaastorm2012,
+  @severe,
+  @macaloney_codebook,
+  @cookbook_R
+abstract-title: Synopsis
+abstract: |
+    Using the Severe Weather Data (N=902297) from the National Oceanic and Atmospheric Administration, we examined  which types of events are most harmful to population health and which have the greatest economic  outcomes during the years 1950 to 2011.
+    
+    Significant differences were observed between the events with greatest consequences to the population healt and to the economy. 
+    
+    Visually inspecting the tabulated data and graphs leads us to affirm that floods are the major causes of damage to property and crops, and tornadoes are responsible for large numbers of fatalities and injuries.
+---
+
+# Introduction
+
+This report relates to explore the NOAA [@severe] Storm Database looking for  those weather events that are detrimental to population's health as well as those who have the greatest economic consequences. 
+
+>>Few variables from the dataset were used and transformed to obtain a wide table, with which to display a couple of plots giving response to the issues this report deals. So, the output of the R-code developed and included in [§ Data Processing](#datapro), is conformed by one table and two plots that the interested reader could find at [§ Results](#results)
+
+To complete the Peer Assessment 2 as requested for the course __Reproducible Research__ by Roger D. Peng, Jeff Leek and Brian Caffo was used the [RStudio](<http://www.rstudio.com/>) 
+
+markdown facilities to generate PDFs files, like this one you  are reading now, directly from
+
+RStudio with [Rmarkdown](<http://rmarkdown.rstudio.com/>) with [Knitr](<http://cran.rstudio.com/web/packages/knitr/index.html>) and the additional installation of [MiK$\TeX$](<http://miktex.org/>)
+a $\LaTeX$ flavor for Windows systems that RStudio use to create a .tex fil e $\LaTeX$ starting from a .Rmd file[^*] that knit convert into a .md file, and then, [pandoc](<https://github.com/jgm/pandoc/releases>) convert the .md into a .tex file and finally, MiK$\TeX$ construc a PDFs output file from the .tex. All this process from inside RStudio.
+
+Additionally, and knowing that it is not necessary, the Appendix B has  relevant information about the repository from where to download  the Rmarkdown file used to obtain this PDF file the reader is reading now, as well as relates to the latex template used for its construction. Thus, not only the results but also the report itself is reproducible.
+
+[^*]: See [§ Appendix B](#appendix-b) to get the full listing of the Rmarkdown file used to obtain this pdf. Readers should be able to reproduce this report.
+
+# Data \label{data}
+
+This report makes use of the Storm Data cumulative from 1950 until 2011, an official publication of the National Oceanic and Atmospheric Administration (NOAA) which documents the occurrence of storms and other significant weather phenomena having sufficient intensity to cause loss of life, injuries, significant property damage, and/or disruption to commerce. Really, we'll use a data set that has been modified slightly, with respect the official one, to make easier to work with it [@peng_storm;  @noaastorm2012; @macaloney_codebook]
+
+In addition, it is a partial record of other significant meteorological events, such as record maximum or minimum temperatures or precipitation that occurs in connection with another event.  Some information appearing in Storm Data may be provided by or gathered from sources outside the National Weather Service (NWS), such as the media, law enforcement and/or other government agencies, private companies, individuals, etc. 
+
+An effort is made to use the best available information but because of time and resource constraints, information from these sources may be unverified by the NWS. Therefore, when using information from Storm Data, customers should be cautious as the NWS does not guarantee the accuracy or validity of the information. Further, when it is apparent information appearing in Storm Data originated from a source outside the NWS (frequently credit is provided)
+
+In order to collect the data, we have not been involved neither in the design of the survey nor in the blocking of confounders. We limited our acting ambit to use the data as they are facilitated. That's the reason we are involved in a __observational study__, based on data already collected and compiled in the NOAA database. 
+
+Any finding derived from the present study could be a _general relation_ but not a _causal relation_, even being possible the existence of such causal relation, we cannot conclude it; because we are dealing with an observational study rather than a experimental one.
+
+
+We summarize all the variables we will use from the original dataset:
+
+```{r datos, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+
+require(xtable)
+print(xtable(read.table(header=T, text='OriginalVariables    Type
+BGN_DATE  Factor
+EVTYPE	Factor
+FATALITIES	int
+INJURIES	int
+PROPDMG	num
+PROPDMGEXP	Factor
+CROPDMG	num
+CROPDMGEXP	Factor')), type='latex',
+                       comment = FALSE,
+                       booktabs=TRUE )
+
+```
+
+
+Additionally, new variables are going to be created and we'll use them to construct the images and data to be displayed in this report and we summarize as follow:
+
+```{r datosnuevos, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+
+require(xtable)
+print(xtable(read.table(header=T, text='NewVariables  Type
+BGN_YEAR  int
+PROPEXP  num
+PROP	num
+CROPEXP	num
+CROP	num')), type='latex',
+                       comment = FALSE,
+                       booktabs=TRUE )
+
+```
+
+# Data Processing \label{datapro}
+
+The software tool used is RStudio. The processing of the database begins with the establishment of the working environment, where the whole data was saved after being  downloaded from the specified location, so it's read into the work environment R. Then, a function called multiplot [@cookbook_R] was defined from the begining to be prepared to construct and show a figure with a custom panel.
+
+The transformation of the data started with  the BGN\_DATE original variable from which the year was  extracted  and added into the database as a new variable called BGN\_YEAR. The process continues with the variable  PROPDMGEXP, where the original values were changed by numerical values in order to be used in future as a multiplicative factor, so was saved as a new variable called PROPEXP. We applied the same process to the variable CROPDMGEXP, and so was obtained and saved a new variable called CROPEXP. After the multiplication of both new variables by respectively PROPDMG and CROPDMG, the results were saved as PROP and CROP with values in billion of dollars and million of dollars respectively.
+
+These last two new variables, are going to be used by summing their values grouping them by the diverse of events ---all of them represented in the variable EVTYPE--- therefore, the resulting data set is conformed by the new variables denominated fatalEvent{int}, injurEvent{int}, propEvent{num}, cropEvent{num} and evidently, EVTYPE{factor} too. The new data set was called **FullData** and it will be the starting point from now on.
+
+Continuing to build a wide table that contains the most relevant, the former for health-related and the latter to economic events. In the first case by grouping the events with at least 100 victims and the last with losses of at least $ 1 million in crops. Thus, we are now ready to obtain and display the Table 1, Figure 1 and Figure 2
+
+In order to allow a more fluent reading of this report, the complete code was moved to [§ Appendix A](#appendix-a), where readers can easily copy/paste and get the table and figures mentioned above. Worth warn that the process of loading and manipulation of data is a time consuming process, leading to need several minutes to complete.
+
+
+
+```{r GetTheDataSet, cache=TRUE, echo=FALSE }
+# Getting & loading the data
+# get the actual working directory
+curdir <- getwd()
+
+# set the pointer to the working directory where the original 
+# dataset is allocated. Change it to fit your particular setting
+workingdirectory <- "D:/Cursos/Hopkin/5-Reproducible Research/Project 2"
+
+# set the new working directory
+setwd(workingdirectory)
+
+# loading the dataset that is already in the working diractory 
+myNOAA <- read.csv("./repdatadataStormData.csv.bz2")
+
+# add a variable with only the year, becuase maybe we need it
+myNOAA <- subset(myNOAA, select=c("BGN_DATE",
+                                  "EVTYPE",
+                                  "FATALITIES",
+                                  "INJURIES",
+                                  "PROPDMG",
+                                  "PROPDMGEXP",
+                                  "CROPDMG",
+                                  "CROPDMGEXP"))
+
+```
+
+```{r FuntionMultiplot, echo=FALSE, warning=FALSE, message=FALSE, cache=TRUE }
+####################
+##### function multiplot
+####################
+
+# Multiple plot function
+# from http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_%28ggplot2%29/
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  require(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+####################
+##### End of function multiplot
+####################
+
+```
+
+```{r TheCoreProcessing,  echo=FALSE, warning=FALSE, message=FALSE, cache= TRUE }
+# attach the dataset so we don't need to write large names
+attach(myNOAA)
+
+# add a variable to the dataset with only the year
+myNOAA$BGN_YEAR <- format(as.Date(BGN_DATE, format = "%m/%d/%Y"), "%Y")
+
+# create a new variable same as PROPDMGEXP
+myNOAA$PROPEXP <- PROPDMGEXP
+
+# actual levels of PROPDMGEXP =
+# ""  "-" "?" "+" "0" "1" "2" "3" "4" "5" "6" "7" "8" "B" "h" "H" "K" "m" "M"
+
+# but we want to be =
+niveles <-c("0", "0", "0", "0", 
+            "1", "10", "100", "1000", "10000", 
+            "100000", "1000000", "10000000", "100000000",
+            "1000000000", "100", "100", "1000", "1000000", "1000000")
+
+# so, do it
+levels(myNOAA$PROPEXP) <- niveles
+
+# change from factor to char ...
+myNOAA$PROPEXP <- as.character(myNOAA$PROPEXP)
+
+# change from char to numeric
+myNOAA$PROPEXP <- as.numeric(myNOAA$PROPEXP)
+
+# calculate the value in billions of dollars and save it as a new variable
+million=as.numeric(1000000)
+billion=as.numeric(1000000000)
+
+
+myNOAA$PROP <- PROPDMG * myNOAA$PROPEXP
+myNOAA$PROP <- myNOAA$PROP/billion
+
+#
+# now, we do the same as the above, but now for CROPDMGEXP
+#
+myNOAA$CROPEXP <- CROPDMGEXP
+
+# actual levels of PROPDMGEXP =
+# ""  "?" "0" "2" "B" "k" "K" "m" "M"
+# but we want  =
+niveles <-c("0", "0", 
+            "1", "100", 
+            "1000000000", "1000", "1000","1000000","1000000")
+
+# so, do it, as we did it above ...
+levels(myNOAA$CROPEXP) <- niveles
+myNOAA$CROPEXP <- as.character(myNOAA$CROPEXP)
+myNOAA$CROPEXP <- as.numeric(myNOAA$CROPEXP)
+
+# calculate the value in millions of dollars and save it as a new variable
+myNOAA$CROP <- CROPDMG * myNOAA$CROPEXP
+myNOAA$CROP <- myNOAA$CROP / million
+# no more attachment
+detach(myNOAA)
+```
+
+```{r TheFullData, warning=FALSE, message=FALSE, cache=TRUE, echo=FALSE }
+
+# goupe the data by EVTYPE summming the fatal cases
+fatalEvent <- aggregate(FATALITIES ~ EVTYPE, myNOAA, sum)
+
+# goupe the data by EVTYPE summming the injuried cases
+injurEvent <- aggregate(INJURIES ~ EVTYPE, myNOAA, sum)
+
+# merge those two data frames into health one
+healthEvent <- merge(fatalEvent, injurEvent, by="EVTYPE", sort = FALSE)
+
+# goupe the data by EVTYPE summming the property cases
+propEvent <- aggregate(PROP ~ EVTYPE, myNOAA, sum)
+
+# goupe the data by EVTYPE summming the crop cases
+cropEvent <- aggregate(CROP ~ EVTYPE, myNOAA, sum)
+
+# merge those two data frames into economic one
+economicEvent <- merge(propEvent, cropEvent, by="EVTYPE", sort = FALSE)
+
+# merge health and economic data frames into a fulldata one
+FullData <- merge(healthEvent, economicEvent, by="EVTYPE", sort = FALSE)
+
+# save the data in the local disc
+write.table(myNOAA, "./myNOAA.txt", sep="\t")
+write.table(FullData, "./FullData.txt", sep="\t")
+
+```
+
+```{r TheTable, comment=NA, results='hide', warning=FALSE, message=FALSE, cache=FALSE, tidy=FALSE, tidy.opts=list(keep.blank.line=FALSE, width.cutoff=60), echo=FALSE}
+
+# Load the required libraries to plot and make the latex table
+require(ggthemes)
+require(grid)
+require(gtable)
+require(xtable)
+
+# and the libraries to format the outputs from this own Rmarkdown file 
+# to incorporate the table printout as a latex commands to be printed as 
+# part of this file aoutput.
+# Note, that the output could be also as a HTML format.
+require(plyr)
+require(knitr)
+
+# in order to show data in table and plots, we choose the minimum cases 
+# for the healt affected as the sum of fatal and injuries cases.
+# for this analysis the value will be 100 persons as minimum.
+
+myDataEvent <- FullData
+MinimumPeopleAfected <- 100
+myDataEvent <- myDataEvent[myDataEvent$FATALITIES > MinimumPeopleAfected, ]
+
+myDataEvent <- droplevels(myDataEvent)
+
+# prepare to table
+names(myDataEvent) <- c("Event",
+                        "Fatalities", 
+                        "Injuries", 
+                        "Property(B$)", 
+                        "Crop(M$)")
+
+# re-order the dataframe to be tabulated and convert num into integers
+# to show them in table
+
+tmp <- arrange(myDataEvent, -Fatalities)
+tmp$Fatalities <- as.integer(tmp$Fatalities)
+tmp$Injuries <- as.integer(tmp$Injuries)
+
+# to reproduce enterely the long sentence for the caption let's do a trick ...
+myCaption <- paste("Rearrangement, respect to the type of event,",
+                   "of the four values we are interested; cases of",
+                   "fatalities and injuries, and also, damages",
+                   "to properties and crop.",  sep = " ")
+                   
+tmpTABLE <- tmp
+
+myLatexTable <- print(xtable(tmpTABLE, caption=myCaption),
+                      type='latex', 
+                      comment = FALSE)
+
+# prepare to plot
+names(myDataEvent) <- c("Event",
+                        "Fatalities", 
+                        "Injuries", 
+                        "Property", 
+                        "Crop")
+
+tmp <- arrange(myDataEvent, -Fatalities)
+tmp$Fatalities <- as.integer(tmp$Fatalities)
+tmp$Injuries <- as.integer(tmp$Injuries)
+tmp <- myDataEvent
+
+tmp$Event <- factor(tmp$Event, 
+                    levels= tmp[order(tmp$Fatalities), ]$Event)
+
+myorder <- levels(tmp$Event)
+
+tmp$Event <- factor(tmp$Event, levels=myorder, ordered=TRUE)
+
+```
+
+```{r TheGeneralPlot, warning=FALSE, message=FALSE, eval=TRUE, echo=FALSE }
+
+# Load the required libraries to plot and make the latex/HTML table
+require(ggthemes)
+require(grid)
+require(gtable)
+
+# construct a friendly palette to Colorblind People as recommended by
+# Color Universal Design (CUD), and add the the default gray from ggplot
+# and the salmon from Wall Street Journal theme  background. 
+# We could also add Black = "#000000", but better not to use it.
+
+Gray = "#999999" 
+Orange = "#E69F00"
+SkyBlue = "#56B4E9"
+BluishGreen = "#009E73"
+Yellow = "#F0E442"
+Blue = "#0072B2"
+Vermillon = "#D55E00"
+RedddishPurple = "#CC79A7"
+GrayGGplot ="#E5E5E5"
+SalmonWSJ = "#F8F2E4"
+
+cbPalette <- c(Gray,
+               Orange,
+               SkyBlue,
+               BluishGreen,
+               Yellow,
+               Blue,
+               Vermillon,
+               RedddishPurple,
+               GrayGGplot,
+               SalmonWSJ)
+
+```
+
+```{r plot1, warning=FALSE, message=FALSE, eval=TRUE, echo=FALSE }
+
+
+p1 <- ggplot(tmp, height=480, width=480) + 
+  scale_fill_manual(values=cbPalette[7]) +
+  scale_colour_manual(values=cbPalette[10]) +
+  aes(x=Event, y= Fatalities, fill= "manual", colour = "manual") +
+  geom_bar(stat="identity") +
+  coord_flip() + 
+  theme(legend.position="none") + 
+  xlab("") + 
+  ylab("") + 
+  ggtitle(paste("Human Losses","\n")) +
+  theme(legend.position="none") +
+  theme(axis.text.y=element_blank())
+
+# give a look&fell like The Wall Street Journal use ... 
+g1 <- p1 + 
+  theme_wsj() +
+  theme(legend.position="none")
+
+# save the plot 
+png(file = "./myproject2_files/figure-latex/plot1.png", 
+    width = 480, 
+    height = 480, 
+    units = "px", 
+    pointsize = 12,
+    bg = "transparent")
+
+plot(g1)
+
+dev.off() -> trashcan
+
+```
+
+```{r plot2, warning=FALSE, message=FALSE, eval=TRUE, echo=FALSE }
+p2 <- ggplot(tmp, height=480, width=480) + 
+  scale_fill_manual(values=cbPalette[2]) +
+  scale_colour_manual(values=cbPalette[10]) +
+  aes(x=Event, y= Injuries, fill= "manual", colour = "manual") +
+  geom_bar(stat="identity") +
+  coord_flip() + 
+  theme(legend.position="none") + 
+  xlab("") + 
+  ylab("") + 
+  ggtitle(paste("Injured People","\n")) +
+  theme(legend.position="none")
+
+# give a look&fell like The Wall Street Journal use ... 
+g2 <- p2 + 
+  theme_wsj() +
+  theme(legend.position="none", axis.text.y=element_blank())
+
+# save the plot 
+png(file = "./myproject2_files/figure-latex/plot2.png", 
+    width = 480, 
+    height = 480, 
+    units = "px", 
+    pointsize = 12,
+    bg = "transparent")
+
+plot(g2)
+
+dev.off() -> trashcan
+
+```
+
+```{r ThePlotOne, eval=FALSE, fig.height= 6, fig.width=12, warning=FALSE, message=FALSE, fig.cap= "Events are sorted by the number of fatal cases with a minimum of 100 fatalities, showing the total number of fatalities and injuries from 1950 to 2011." , results='hide' , echo=FALSE}
+
+# show the plot of injured and losses human 
+# as figure 1.
+# Note, the figure caption is in the heading of the correspondent chunk
+multiplot(g1, g2, cols=2)
+
+# save it
+png(file = "./myproject2_files/figure-latex/PlotOne.png", 
+    width = 960, 
+    height = 480, 
+    units = "px", 
+    pointsize = 12,
+    bg = "transparent")
+
+multiplot(g1, g2, cols=2)
+
+dev.off() -> trashcan
+```
+
+```{r plot3, warning=FALSE, message=FALSE, eval=TRUE, echo=FALSE }
+
+MinimumCropDamage <- 1
+tmp <- myDataEvent[tmp$Crop > MinimumCropDamage, ]
+
+tmp <- droplevels(tmp)
+
+# re-order the data with crop damages
+
+require(plyr)
+
+
+tmp$Event <- factor(tmp$Event,
+                    levels= tmp[order(tmp$Crop), ]$Event)
+
+myorder <- levels(tmp$Event)
+
+tmp$Event <- factor(tmp$Event, levels=myorder, ordered=TRUE)
+
+p3 <- ggplot(tmp, height=480, width=480) + 
+  scale_fill_manual(values=cbPalette[4]) +
+  scale_colour_manual(values=cbPalette[10]) +
+  aes(x=Event, y= Property, fill= "manual", colour = "manual") +
+  geom_bar(stat="identity") +
+  coord_flip() + 
+  theme(legend.position="none") + 
+  xlab("") + 
+  ylab("") + 
+  ggtitle(paste("Property Damage\n", "(Billions-$)")) +
+  theme(legend.position="none") +
+  theme(axis.text.y=element_blank())
+
+# give a look&fell like The Wall Street Journal use ... 
+g3 <- p3 + 
+  theme_wsj() +
+  theme(legend.position="none", axis.text.y=element_blank())
+
+# save the plot 
+png(file = "./myproject2_files/figure-latex/plot3.png", 
+    width = 480, 
+    height = 480, 
+    units = "px", 
+    pointsize = 12,
+    bg = "transparent")
+
+plot(g3)
+
+dev.off() -> trashcan
+
+```
+
+```{r plot4, warning=FALSE, message=FALSE, eval=TRUE, echo=FALSE  }
+
+p4 <- ggplot(tmp, height=480, width=480) + 
+  scale_fill_manual(values=cbPalette[6]) +
+  scale_colour_manual(values=cbPalette[10]) +
+  aes(x=Event, y= Crop, fill= "manual", colour = "manual") +
+  geom_bar(stat="identity") +
+  coord_flip() + 
+  theme(legend.position="none") + 
+  xlab("") + 
+  ylab("") + 
+  ggtitle(paste("Crop Damage\n", "(Millions-$)")) +
+  theme(legend.position="none")
+
+# give a look&fell like The Wall Street Journal use ... 
+g4 <- p4 + 
+  theme_wsj() +
+  theme(legend.position="none")
+
+# save the plot 
+png(file = "./myproject2_files/figure-latex/plot4.png", 
+    width = 480, 
+    height = 480, 
+    units = "px", 
+    pointsize = 12,
+    bg = "transparent")
+
+plot(g4)
+
+dev.off() -> trashcan
+
+```
+
+```{r ThePlotTwo, eval=FALSE, fig.height= 6, fig.width=12, warning=FALSE, message=FALSE,  fig.cap= "Events are sorted by the $ (million or billion) amount of damages in crop, with a minimum of one million dollars, showing the total sum of damage in properties and crops, from 1950 to 2011." , echo=FALSE}
+
+# show the plot of injured and losses human 
+# as figure 2.
+# Note, the figure caption is in the heading of the correspondent chunk 
+multiplot(g4, g3, cols=2)
+
+# save it
+png(file = "./myproject2_files/figure-latex/PlotTwo.png", 
+    width = 960, 
+    height = 480, 
+    units = "px", 
+    pointsize = 12,
+    bg = "transparent")
+
+multiplot(g4, g3, cols=2)
+
+dev.off() -> trashcan
+```
+
+
+# Results \label{results} 
+
+
+In Table 1 we obtained a summary of the four totals grouped by events, the latter arranged for a number of victims of at least 100 individuals resulting in an understandable table without oversized.
+
+
+```{r NowShowTheTable , results='asis', echo=FALSE}
+
+myLatexTable <- print(xtable(tmpTABLE, caption=myCaption), 
+                      type='latex', booktabs=TRUE, 
+                      comment = FALSE, scalebox=0.75,
+                      # floating=FALSE
+                      )
+
+```
+
+
+We note that the leading cause of health risk are tornadoes while floods are causing major damage to the economy. Prominent, among all figures, the huge amount of lost caused by floods to the property over the years that we have studied, with a total sum of roughly 145 billion dollars. We accept this amount  because comes from a trusted source such as NOAA, but still, we have found it surprising.
+
+![Events are sorted by the number of fatal cases with a minimum of 100 fatalities, showing the total number of fatalities and injuries from 1950 to 2011.](./proj2_files/figure-latex/ThePlotOne.pdf)
+
+The types of events that are most harmful to population health are show in the above figure and seems that the amount of fatalities and injuries are related ---as a anecdotical case--- roughly 1:10.  
+
+
+
+![Events are sorted by the $ (million or billion) amount of damages in crops, with a minimum of one million dollars, showing the total sum of damage in properties and crops, from 1950 to 2011.](./proj2_files/figure-latex/ThePlotTwo.pdf)
+
+The last figure shows the events with the greatest economic consequences where floods are clearly the most devastating of all events both the damage they cause to crops and properties 
+
+
+
+
+\newpage
+
+# Works cited \label{references} 
+
+\newpage
+
+# Appendix A
+
+The code that is reproduced below should fully play the manipulation of data, calculations and presentation of the table and the two images used in this report. The code is not intended neither to be nice nor efficient, just get the desired results  by giving answer the following two questions; across the United States, which types of events are most harmful with respect to population health, and which have the greatest economic consequences.
+
+
+```{r listing, results='asis', echo=TRUE}
+# the full listing R code 
+```
+
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Getting & loading the data}
+\CommentTok{# get the actual working directory}
+\NormalTok{curdir <-}\StringTok{ }\KeywordTok{getwd}\NormalTok{()}
+
+\CommentTok{# set the pointer to the working directory where the original }
+\CommentTok{# dataset is allocated. Change it to fit your particular setting}
+\NormalTok{workingdirectory <-}\StringTok{ "D:/Cursos/Hopkin/5-Reproducible Research/Project 2"}
+
+\CommentTok{# set the new working directory}
+\KeywordTok{setwd}\NormalTok{(workingdirectory)}
+
+\CommentTok{# loading the dataset that is already in the working diractory }
+\NormalTok{myNOAA <-}\StringTok{ }\KeywordTok{read.csv}\NormalTok{(}\StringTok{"./repdatadataStormData.csv.bz2"}\NormalTok{)}
+
+\CommentTok{# add a variable with only the year, becuase maybe we need it}
+\NormalTok{myNOAA <-}\StringTok{ }\KeywordTok{subset}\NormalTok{(myNOAA, }\DataTypeTok{select=}\KeywordTok{c}\NormalTok{(}\StringTok{"BGN_DATE"}\NormalTok{,}
+                                  \StringTok{"EVTYPE"}\NormalTok{,}
+                                  \StringTok{"FATALITIES"}\NormalTok{,}
+                                  \StringTok{"INJURIES"}\NormalTok{,}
+                                  \StringTok{"PROPDMG"}\NormalTok{,}
+                                  \StringTok{"PROPDMGEXP"}\NormalTok{,}
+                                  \StringTok{"CROPDMG"}\NormalTok{,}
+                                  \StringTok{"CROPDMGEXP"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+
+
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{####################}
+\NormalTok{##### function multiplot}
+\NormalTok{####################}
+
+\CommentTok{# Multiple plot function}
+\CommentTok{# from http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_%28ggplot2%29/}
+\CommentTok{#}
+\CommentTok{# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)}
+\CommentTok{# - cols:   Number of columns in layout}
+\CommentTok{# - layout: A matrix specifying the layout. If present, 'cols' is ignored.}
+\CommentTok{#}
+\CommentTok{# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),}
+\CommentTok{# then plot 1 will go in the upper left, 2 will go in the upper right, and}
+\CommentTok{# 3 will go all the way across the bottom.}
+\CommentTok{#}
+\CommentTok{#}
+\NormalTok{multiplot <-}\StringTok{ }\NormalTok{function(..., }\DataTypeTok{plotlist=}\OtherTok{NULL}\NormalTok{, file, }\DataTypeTok{cols=}\DecValTok{1}\NormalTok{, }\DataTypeTok{layout=}\OtherTok{NULL}\NormalTok{) \{}
+  \KeywordTok{require}\NormalTok{(grid)}
+  
+  \CommentTok{# Make a list from the ... arguments and plotlist}
+  \NormalTok{plots <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\KeywordTok{list}\NormalTok{(...), plotlist)}
+  
+  \NormalTok{numPlots =}\StringTok{ }\KeywordTok{length}\NormalTok{(plots)}
+  
+  \CommentTok{# If layout is NULL, then use 'cols' to determine layout}
+  \NormalTok{if (}\KeywordTok{is.null}\NormalTok{(layout)) \{}
+    \CommentTok{# Make the panel}
+    \CommentTok{# ncol: Number of columns of plots}
+    \CommentTok{# nrow: Number of rows needed, calculated from # of cols}
+    \NormalTok{layout <-}\StringTok{ }\KeywordTok{matrix}\NormalTok{(}\KeywordTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{, cols *}\StringTok{ }\KeywordTok{ceiling}\NormalTok{(numPlots/cols)),}
+                     \DataTypeTok{ncol =} \NormalTok{cols, }\DataTypeTok{nrow =} \KeywordTok{ceiling}\NormalTok{(numPlots/cols))}
+  \NormalTok{\}}
+  
+  \NormalTok{if (numPlots==}\DecValTok{1}\NormalTok{) \{}
+    \KeywordTok{print}\NormalTok{(plots[[}\DecValTok{1}\NormalTok{]])}
+    
+  \NormalTok{\} else \{}
+    \CommentTok{# Set up the page}
+    \KeywordTok{grid.newpage}\NormalTok{()}
+    \KeywordTok{pushViewport}\NormalTok{(}\KeywordTok{viewport}\NormalTok{(}\DataTypeTok{layout =} \KeywordTok{grid.layout}\NormalTok{(}\KeywordTok{nrow}\NormalTok{(layout), }\KeywordTok{ncol}\NormalTok{(layout))))}
+    
+    \CommentTok{# Make each plot, in the correct location}
+    \NormalTok{for (i in }\DecValTok{1}\NormalTok{:numPlots) \{}
+      \CommentTok{# Get the i,j matrix positions of the regions that contain this subplot}
+      \NormalTok{matchidx <-}\StringTok{ }\KeywordTok{as.data.frame}\NormalTok{(}\KeywordTok{which}\NormalTok{(layout ==}\StringTok{ }\NormalTok{i, }\DataTypeTok{arr.ind =} \OtherTok{TRUE}\NormalTok{))}
+      
+      \KeywordTok{print}\NormalTok{(plots[[i]], }\DataTypeTok{vp =} \KeywordTok{viewport}\NormalTok{(}\DataTypeTok{layout.pos.row =} \NormalTok{matchidx$row,}
+                                      \DataTypeTok{layout.pos.col =} \NormalTok{matchidx$col))}
+    \NormalTok{\}}
+  \NormalTok{\}}
+\NormalTok{\}}
+
+\NormalTok{####################}
+\NormalTok{##### End of function multiplot}
+\NormalTok{####################}
+\end{Highlighting}
+\end{Shaded}
+
+
+
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# attach the dataset so we don't need to write large names}
+\KeywordTok{attach}\NormalTok{(myNOAA)}
+
+\CommentTok{# add a variable to the dataset with only the year}
+\NormalTok{myNOAA$BGN_YEAR <-}\StringTok{ }\KeywordTok{format}\NormalTok{(}\KeywordTok{as.Date}\NormalTok{(BGN_DATE, }\DataTypeTok{format =} \StringTok{"%m/%d/%Y"}\NormalTok{), }\StringTok{"%Y"}\NormalTok{)}
+
+\CommentTok{# create a new variable same as PROPDMGEXP}
+\NormalTok{myNOAA$PROPEXP <-}\StringTok{ }\NormalTok{PROPDMGEXP}
+
+\CommentTok{# actual levels of PROPDMGEXP =}
+\CommentTok{# ""  "-" "?" "+" "0" "1" "2" "3" "4" "5" "6" "7" "8" "B" "h" "H" "K" "m" "M"}
+
+\CommentTok{# but we want to be =}
+\NormalTok{niveles <-}\KeywordTok{c}\NormalTok{(}\StringTok{"0"}\NormalTok{, }\StringTok{"0"}\NormalTok{, }\StringTok{"0"}\NormalTok{, }\StringTok{"0"}\NormalTok{, }
+            \StringTok{"1"}\NormalTok{, }\StringTok{"10"}\NormalTok{, }\StringTok{"100"}\NormalTok{, }\StringTok{"1000"}\NormalTok{, }\StringTok{"10000"}\NormalTok{, }
+            \StringTok{"100000"}\NormalTok{, }\StringTok{"1000000"}\NormalTok{, }\StringTok{"10000000"}\NormalTok{, }\StringTok{"100000000"}\NormalTok{,}
+            \StringTok{"1000000000"}\NormalTok{, }\StringTok{"100"}\NormalTok{, }\StringTok{"100"}\NormalTok{, }\StringTok{"1000"}\NormalTok{, }\StringTok{"1000000"}\NormalTok{, }\StringTok{"1000000"}\NormalTok{)}
+
+\CommentTok{# so, do it}
+\KeywordTok{levels}\NormalTok{(myNOAA$PROPEXP) <-}\StringTok{ }\NormalTok{niveles}
+
+\CommentTok{# change from factor to char ...}
+\NormalTok{myNOAA$PROPEXP <-}\StringTok{ }\KeywordTok{as.character}\NormalTok{(myNOAA$PROPEXP)}
+
+\CommentTok{# change from char to numeric}
+\NormalTok{myNOAA$PROPEXP <-}\StringTok{ }\KeywordTok{as.numeric}\NormalTok{(myNOAA$PROPEXP)}
+
+\CommentTok{# calculate the value in billions of dollars and save it as a new variable}
+\NormalTok{million=}\KeywordTok{as.numeric}\NormalTok{(}\DecValTok{1000000}\NormalTok{)}
+\NormalTok{billion=}\KeywordTok{as.numeric}\NormalTok{(}\DecValTok{1000000000}\NormalTok{)}
+
+
+\NormalTok{myNOAA$PROP <-}\StringTok{ }\NormalTok{PROPDMG *}\StringTok{ }\NormalTok{myNOAA$PROPEXP}
+\NormalTok{myNOAA$PROP <-}\StringTok{ }\NormalTok{myNOAA$PROP/billion}
+
+\CommentTok{#}
+\CommentTok{# now, we do the same as the above, but now for CROPDMGEXP}
+\CommentTok{#}
+\NormalTok{myNOAA$CROPEXP <-}\StringTok{ }\NormalTok{CROPDMGEXP}
+
+\CommentTok{# actual levels of PROPDMGEXP =}
+\CommentTok{# ""  "?" "0" "2" "B" "k" "K" "m" "M"}
+\CommentTok{# but we want  =}
+\NormalTok{niveles <-}\KeywordTok{c}\NormalTok{(}\StringTok{"0"}\NormalTok{, }\StringTok{"0"}\NormalTok{, }
+            \StringTok{"1"}\NormalTok{, }\StringTok{"100"}\NormalTok{, }
+            \StringTok{"1000000000"}\NormalTok{, }\StringTok{"1000"}\NormalTok{, }\StringTok{"1000"}\NormalTok{,}\StringTok{"1000000"}\NormalTok{,}\StringTok{"1000000"}\NormalTok{)}
+
+\CommentTok{# so, do it, as we did it above ...}
+\KeywordTok{levels}\NormalTok{(myNOAA$CROPEXP) <-}\StringTok{ }\NormalTok{niveles}
+\NormalTok{myNOAA$CROPEXP <-}\StringTok{ }\KeywordTok{as.character}\NormalTok{(myNOAA$CROPEXP)}
+\NormalTok{myNOAA$CROPEXP <-}\StringTok{ }\KeywordTok{as.numeric}\NormalTok{(myNOAA$CROPEXP)}
+
+\CommentTok{# calculate the value in millions of dollars and save it as a new variable}
+\NormalTok{myNOAA$CROP <-}\StringTok{ }\NormalTok{CROPDMG *}\StringTok{ }\NormalTok{myNOAA$CROPEXP}
+\NormalTok{myNOAA$CROP <-}\StringTok{ }\NormalTok{myNOAA$CROP /}\StringTok{ }\NormalTok{million}
+\CommentTok{# no more attachment}
+\KeywordTok{detach}\NormalTok{(myNOAA)}
+\end{Highlighting}
+\end{Shaded}
+
+
+
+
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# goupe the data by EVTYPE summming the fatal cases}
+\NormalTok{fatalEvent <-}\StringTok{ }\KeywordTok{aggregate}\NormalTok{(FATALITIES ~}\StringTok{ }\NormalTok{EVTYPE, myNOAA, sum)}
+
+\CommentTok{# goupe the data by EVTYPE summming the injuried cases}
+\NormalTok{injurEvent <-}\StringTok{ }\KeywordTok{aggregate}\NormalTok{(INJURIES ~}\StringTok{ }\NormalTok{EVTYPE, myNOAA, sum)}
+
+\CommentTok{# merge those two data frames into health one}
+\NormalTok{healthEvent <-}\StringTok{ }\KeywordTok{merge}\NormalTok{(fatalEvent, injurEvent, }\DataTypeTok{by=}\StringTok{"EVTYPE"}\NormalTok{, }\DataTypeTok{sort =} \OtherTok{FALSE}\NormalTok{)}
+
+\CommentTok{# goupe the data by EVTYPE summming the property cases}
+\NormalTok{propEvent <-}\StringTok{ }\KeywordTok{aggregate}\NormalTok{(PROP ~}\StringTok{ }\NormalTok{EVTYPE, myNOAA, sum)}
+
+\CommentTok{# goupe the data by EVTYPE summming the crop cases}
+\NormalTok{cropEvent <-}\StringTok{ }\KeywordTok{aggregate}\NormalTok{(CROP ~}\StringTok{ }\NormalTok{EVTYPE, myNOAA, sum)}
+
+\CommentTok{# merge those two data frames into economic one}
+\NormalTok{economicEvent <-}\StringTok{ }\KeywordTok{merge}\NormalTok{(propEvent, cropEvent, }\DataTypeTok{by=}\StringTok{"EVTYPE"}\NormalTok{, }\DataTypeTok{sort =} \OtherTok{FALSE}\NormalTok{)}
+
+\CommentTok{# merge health and economic data frames into a fulldata one}
+\NormalTok{FullData <-}\StringTok{ }\KeywordTok{merge}\NormalTok{(healthEvent, economicEvent, }\DataTypeTok{by=}\StringTok{"EVTYPE"}\NormalTok{, }\DataTypeTok{sort =} \OtherTok{FALSE}\NormalTok{)}
+
+\CommentTok{# save the data in the local disc}
+\KeywordTok{write.table}\NormalTok{(myNOAA, }\StringTok{"./myNOAA.txt"}\NormalTok{, }\DataTypeTok{sep=}\StringTok{"}\CharTok{\textbackslash{}t}\StringTok{"}\NormalTok{)}
+\KeywordTok{write.table}\NormalTok{(FullData, }\StringTok{"./FullData.txt"}\NormalTok{, }\DataTypeTok{sep=}\StringTok{"}\CharTok{\textbackslash{}t}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+
+
+
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Load the required libraries to plot and make the latex/HTML table}
+\KeywordTok{require}\NormalTok{(ggthemes)}
+\KeywordTok{require}\NormalTok{(grid)}
+\KeywordTok{require}\NormalTok{(gtable)}
+\KeywordTok{require}\NormalTok{(xtable)}
+
+\CommentTok{# and the libraries to format the outputs from this own Rmarkdown file }
+\CommentTok{# to incorporate the table printout as a latex commands to be printed as }
+\CommentTok{# part of this file aoutput.}
+\CommentTok{# Note, that the output could be also as a HTML format.}
+\KeywordTok{require}\NormalTok{(plyr)}
+\KeywordTok{require}\NormalTok{(knitr)}
+
+\CommentTok{# in order to show data in table and plots, we choose the minimum cases }
+\CommentTok{# for the healt affected as the sum of fatal and injuries cases.}
+\CommentTok{# for this analysis the value will be 100 persons as minimum.}
+
+\NormalTok{myDataEvent <-}\StringTok{ }\NormalTok{FullData}
+\NormalTok{MinimumPeopleAfected <-}\StringTok{ }\DecValTok{100}
+\NormalTok{myDataEvent <-}\StringTok{ }\NormalTok{myDataEvent[myDataEvent$FATALITIES >}\StringTok{ }\NormalTok{MinimumPeopleAfected, ]}
+
+\NormalTok{myDataEvent <-}\StringTok{ }\KeywordTok{droplevels}\NormalTok{(myDataEvent)}
+
+\CommentTok{# prepare to table}
+\KeywordTok{names}\NormalTok{(myDataEvent) <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"Event"}\NormalTok{,}\StringTok{"Fatalities"}\NormalTok{, }\StringTok{"Injuries"}\NormalTok{, }\StringTok{"Property(B$)"}\NormalTok{, }\StringTok{"Crop(M$)"}\NormalTok{)}
+
+\CommentTok{# re-order the dataframe to be tabulated and convert num into integers}
+\CommentTok{# to show them in table}
+
+\NormalTok{tmp <-}\StringTok{ }\KeywordTok{arrange}\NormalTok{(myDataEvent, -Fatalities)}
+\NormalTok{tmp$Fatalities <-}\StringTok{ }\KeywordTok{as.integer}\NormalTok{(tmp$Fatalities)}
+\NormalTok{tmp$Injuries <-}\StringTok{ }\KeywordTok{as.integer}\NormalTok{(tmp$Injuries)}
+
+\NormalTok{myCaption =}\StringTok{ 'Sed nec mi tincidunt, feugiat arcu ac, malesuada mauris. Suspendisse et scelerisque erat. Phasellus vitae risus at justo tincidunt posuere. Fusce eget nisi a justo ullamcorper condimentum.'}
+
+\NormalTok{tmpTABLE <-}\StringTok{ }\NormalTok{tmp}
+
+\NormalTok{myLatexTable <-}\StringTok{ }\KeywordTok{print}\NormalTok{(}\KeywordTok{xtable}\NormalTok{(tmpTABLE, }\DataTypeTok{caption=}\NormalTok{myCaption),}
+                      \DataTypeTok{type=}\StringTok{'latex'}\NormalTok{, }
+                      \DataTypeTok{comment =} \OtherTok{FALSE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+
+
+
+
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Load the required libraries to plot and make the latex table}
+\KeywordTok{require}\NormalTok{(ggthemes)}
+\KeywordTok{require}\NormalTok{(grid)}
+\KeywordTok{require}\NormalTok{(gtable)}
+\KeywordTok{require}\NormalTok{(xtable)}
+
+\CommentTok{# and the libraries to format the outputs from this own Rmarkdown file }
+\CommentTok{# to incorporate the table printout as a latex commands to be printed as }
+\CommentTok{# part of this file aoutput.}
+\CommentTok{# Note, that the output could be also as a HTML format.}
+\KeywordTok{require}\NormalTok{(plyr)}
+\KeywordTok{require}\NormalTok{(knitr)}
+
+\CommentTok{# in order to show data in table and plots, we choose the minimum cases }
+\CommentTok{# for the healt affected as the sum of fatal and injuries cases.}
+\CommentTok{# for this analysis the value will be 100 persons as minimum.}
+
+\NormalTok{myDataEvent <-}\StringTok{ }\NormalTok{FullData}
+\NormalTok{MinimumPeopleAfected <-}\StringTok{ }\DecValTok{100}
+\NormalTok{myDataEvent <-}\StringTok{ }\NormalTok{myDataEvent[myDataEvent$FATALITIES >}\StringTok{ }\NormalTok{MinimumPeopleAfected, ]}
+
+\NormalTok{myDataEvent <-}\StringTok{ }\KeywordTok{droplevels}\NormalTok{(myDataEvent)}
+
+\CommentTok{# prepare to table}
+\KeywordTok{names}\NormalTok{(myDataEvent) <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"Event"}\NormalTok{,}
+                        \StringTok{"Fatalities"}\NormalTok{, }
+                        \StringTok{"Injuries"}\NormalTok{, }
+                        \StringTok{"Property(B$)"}\NormalTok{, }
+                        \StringTok{"Crop(M$)"}\NormalTok{)}
+
+\CommentTok{# re-order the dataframe to be tabulated and convert num into integers}
+\CommentTok{# to show them in table}
+
+\NormalTok{tmp <-}\StringTok{ }\KeywordTok{arrange}\NormalTok{(myDataEvent, -Fatalities)}
+\NormalTok{tmp$Fatalities <-}\StringTok{ }\KeywordTok{as.integer}\NormalTok{(tmp$Fatalities)}
+\NormalTok{tmp$Injuries <-}\StringTok{ }\KeywordTok{as.integer}\NormalTok{(tmp$Injuries)}
+
+\CommentTok{# to reproduce enterely the long sentence for the caption let's do a trick ...}
+\NormalTok{myCaption <-}\StringTok{ }\KeywordTok{paste}\NormalTok{(}\StringTok{"Rearrangement, respect to the type of event,"}\NormalTok{,}
+                   \StringTok{"of the four values we are interested; cases of"}\NormalTok{,}
+                   \StringTok{"fatalities and injuries, and also, damages"}\NormalTok{,}
+                   \StringTok{"to properties and crop."}\NormalTok{,  }\DataTypeTok{sep =} \StringTok{" "}\NormalTok{)}
+                   
+\NormalTok{tmpTABLE <-}\StringTok{ }\NormalTok{tmp}
+
+\NormalTok{myLatexTable <-}\StringTok{ }\KeywordTok{print}\NormalTok{(}\KeywordTok{xtable}\NormalTok{(tmpTABLE, }\DataTypeTok{caption=}\NormalTok{myCaption),}
+                      \DataTypeTok{type=}\StringTok{'latex'}\NormalTok{, }
+                      \DataTypeTok{comment =} \OtherTok{FALSE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+
+
+
+
+
+
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Load the required libraries to plot and make the latex/HTML table}
+\KeywordTok{require}\NormalTok{(ggthemes)}
+\KeywordTok{require}\NormalTok{(grid)}
+\KeywordTok{require}\NormalTok{(gtable)}
+
+\CommentTok{# construct a friendly palette to Colorblind People as recommended by}
+\CommentTok{# Color Universal Design (CUD), and add the the default gray from ggplot}
+\CommentTok{# and the salmon from Wall Street Journal theme  background. }
+\CommentTok{# We could also add Black = "#000000", but better not to use it.}
+
+\NormalTok{Gray =}\StringTok{ "#999999"} 
+\NormalTok{Orange =}\StringTok{ "#E69F00"}
+\NormalTok{SkyBlue =}\StringTok{ "#56B4E9"}
+\NormalTok{BluishGreen =}\StringTok{ "#009E73"}
+\NormalTok{Yellow =}\StringTok{ "#F0E442"}
+\NormalTok{Blue =}\StringTok{ "#0072B2"}
+\NormalTok{Vermillon =}\StringTok{ "#D55E00"}
+\NormalTok{RedddishPurple =}\StringTok{ "#CC79A7"}
+\NormalTok{GrayGGplot =}\StringTok{"#E5E5E5"}
+\NormalTok{SalmonWSJ =}\StringTok{ "#F8F2E4"}
+
+\NormalTok{cbPalette <-}\StringTok{ }\KeywordTok{c}\NormalTok{(Gray,}
+               \NormalTok{Orange,}
+               \NormalTok{SkyBlue,}
+               \NormalTok{BluishGreen,}
+               \NormalTok{Yellow,}
+               \NormalTok{Blue,}
+               \NormalTok{Vermillon,}
+               \NormalTok{RedddishPurple,}
+               \NormalTok{GrayGGplot,}
+               \NormalTok{SalmonWSJ)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{p1 <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(tmp, }\DataTypeTok{height=}\DecValTok{480}\NormalTok{, }\DataTypeTok{width=}\DecValTok{480}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{7}\NormalTok{]) +}
+\StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{10}\NormalTok{]) +}
+\StringTok{  }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{Event, }\DataTypeTok{y=} \NormalTok{Fatalities, }\DataTypeTok{fill=} \StringTok{"manual"}\NormalTok{, }\DataTypeTok{colour =} \StringTok{"manual"}\NormalTok{) +}
+\StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{stat=}\StringTok{"identity"}\NormalTok{) +}
+\StringTok{  }\KeywordTok{coord_flip}\NormalTok{() +}\StringTok{ }
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{ggtitle}\NormalTok{(}\KeywordTok{paste}\NormalTok{(}\StringTok{"Human Losses"}\NormalTok{,}\StringTok{"}\CharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)) +}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{) +}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{axis.text.y=}\KeywordTok{element_blank}\NormalTok{())}
+
+\CommentTok{# give a look&fell like The Wall Street Journal use ... }
+\NormalTok{g1 <-}\StringTok{ }\NormalTok{p1 +}\StringTok{ }
+\StringTok{  }\KeywordTok{theme_wsj}\NormalTok{() +}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{)}
+
+\CommentTok{# save the plot }
+\KeywordTok{png}\NormalTok{(}\DataTypeTok{file =} \StringTok{"./myproject2_files/figure-latex/plot1.png"}\NormalTok{, }
+    \DataTypeTok{width =} \DecValTok{480}\NormalTok{, }
+    \DataTypeTok{height =} \DecValTok{480}\NormalTok{, }
+    \DataTypeTok{units =} \StringTok{"px"}\NormalTok{, }
+    \DataTypeTok{pointsize =} \DecValTok{12}\NormalTok{,}
+    \DataTypeTok{bg =} \StringTok{"transparent"}\NormalTok{)}
+
+\KeywordTok{plot}\NormalTok{(g1)}
+
+\KeywordTok{dev.off}\NormalTok{() ->}\StringTok{ }\NormalTok{trashcan}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{p2 <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(tmp, }\DataTypeTok{height=}\DecValTok{480}\NormalTok{, }\DataTypeTok{width=}\DecValTok{480}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{2}\NormalTok{]) +}
+\StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{10}\NormalTok{]) +}
+\StringTok{  }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{Event, }\DataTypeTok{y=} \NormalTok{Injuries, }\DataTypeTok{fill=} \StringTok{"manual"}\NormalTok{, }\DataTypeTok{colour =} \StringTok{"manual"}\NormalTok{) +}
+\StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{stat=}\StringTok{"identity"}\NormalTok{) +}
+\StringTok{  }\KeywordTok{coord_flip}\NormalTok{() +}\StringTok{ }
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{ggtitle}\NormalTok{(}\KeywordTok{paste}\NormalTok{(}\StringTok{"Injured People"}\NormalTok{,}\StringTok{"}\CharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)) +}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{)}
+
+\CommentTok{# give a look&fell like The Wall Street Journal use ... }
+\NormalTok{g2 <-}\StringTok{ }\NormalTok{p2 +}\StringTok{ }
+\StringTok{  }\KeywordTok{theme_wsj}\NormalTok{() +}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{, }\DataTypeTok{axis.text.y=}\KeywordTok{element_blank}\NormalTok{())}
+
+\CommentTok{# save the plot }
+\KeywordTok{png}\NormalTok{(}\DataTypeTok{file =} \StringTok{"./myproject2_files/figure-latex/plot2.png"}\NormalTok{, }
+    \DataTypeTok{width =} \DecValTok{480}\NormalTok{, }
+    \DataTypeTok{height =} \DecValTok{480}\NormalTok{, }
+    \DataTypeTok{units =} \StringTok{"px"}\NormalTok{, }
+    \DataTypeTok{pointsize =} \DecValTok{12}\NormalTok{,}
+    \DataTypeTok{bg =} \StringTok{"transparent"}\NormalTok{)}
+
+\KeywordTok{plot}\NormalTok{(g2)}
+
+\KeywordTok{dev.off}\NormalTok{() ->}\StringTok{ }\NormalTok{trashcan}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# show the plot of injured and losses human }
+\CommentTok{# as figure 1.}
+\CommentTok{# Note, the figure caption is in the heading of the correspondent chunk}
+\KeywordTok{multiplot}\NormalTok{(g1, g2, }\DataTypeTok{cols=}\DecValTok{2}\NormalTok{)}
+
+\CommentTok{# save it}
+\KeywordTok{png}\NormalTok{(}\DataTypeTok{file =} \StringTok{"./myproject2_files/figure-latex/PlotOne.png"}\NormalTok{, }
+    \DataTypeTok{width =} \DecValTok{960}\NormalTok{, }
+    \DataTypeTok{height =} \DecValTok{480}\NormalTok{, }
+    \DataTypeTok{units =} \StringTok{"px"}\NormalTok{, }
+    \DataTypeTok{pointsize =} \DecValTok{12}\NormalTok{,}
+    \DataTypeTok{bg =} \StringTok{"transparent"}\NormalTok{)}
+
+\KeywordTok{multiplot}\NormalTok{(g1, g2, }\DataTypeTok{cols=}\DecValTok{2}\NormalTok{)}
+
+\KeywordTok{dev.off}\NormalTok{() ->}\StringTok{ }\NormalTok{trashcan}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{MinimumCropDamage <-}\StringTok{ }\DecValTok{1}
+\NormalTok{tmp <-}\StringTok{ }\NormalTok{myDataEvent[tmp$Crop >}\StringTok{ }\NormalTok{MinimumCropDamage, ]}
+
+\NormalTok{tmp <-}\StringTok{ }\KeywordTok{droplevels}\NormalTok{(tmp)}
+
+\CommentTok{# re-order the data with crop damages}
+
+\KeywordTok{require}\NormalTok{(plyr)}
+
+
+\NormalTok{tmp$Event <-}\StringTok{ }\KeywordTok{factor}\NormalTok{(tmp$Event,}
+                    \DataTypeTok{levels=} \NormalTok{tmp[}\KeywordTok{order}\NormalTok{(tmp$Crop), ]$Event)}
+
+\NormalTok{myorder <-}\StringTok{ }\KeywordTok{levels}\NormalTok{(tmp$Event)}
+
+\NormalTok{tmp$Event <-}\StringTok{ }\KeywordTok{factor}\NormalTok{(tmp$Event, }\DataTypeTok{levels=}\NormalTok{myorder, }\DataTypeTok{ordered=}\OtherTok{TRUE}\NormalTok{)}
+
+\NormalTok{p3 <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(tmp, }\DataTypeTok{height=}\DecValTok{480}\NormalTok{, }\DataTypeTok{width=}\DecValTok{480}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{4}\NormalTok{]) +}
+\StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{10}\NormalTok{]) +}
+\StringTok{  }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{Event, }\DataTypeTok{y=} \NormalTok{Property, }\DataTypeTok{fill=} \StringTok{"manual"}\NormalTok{, }\DataTypeTok{colour =} \StringTok{"manual"}\NormalTok{) +}
+\StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{stat=}\StringTok{"identity"}\NormalTok{) +}
+\StringTok{  }\KeywordTok{coord_flip}\NormalTok{() +}\StringTok{ }
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{ggtitle}\NormalTok{(}\KeywordTok{paste}\NormalTok{(}\StringTok{"Property Damage}\CharTok{\textbackslash{}n}\StringTok{"}\NormalTok{, }\StringTok{"(Billions-$)"}\NormalTok{)) +}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{) +}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{axis.text.y=}\KeywordTok{element_blank}\NormalTok{())}
+
+\CommentTok{# give a look&fell like The Wall Street Journal use ... }
+\NormalTok{g3 <-}\StringTok{ }\NormalTok{p3 +}\StringTok{ }
+\StringTok{  }\KeywordTok{theme_wsj}\NormalTok{() +}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{, }\DataTypeTok{axis.text.y=}\KeywordTok{element_blank}\NormalTok{())}
+
+\CommentTok{# save the plot }
+\KeywordTok{png}\NormalTok{(}\DataTypeTok{file =} \StringTok{"./myproject2_files/figure-latex/plot3.png"}\NormalTok{, }
+    \DataTypeTok{width =} \DecValTok{480}\NormalTok{, }
+    \DataTypeTok{height =} \DecValTok{480}\NormalTok{, }
+    \DataTypeTok{units =} \StringTok{"px"}\NormalTok{, }
+    \DataTypeTok{pointsize =} \DecValTok{12}\NormalTok{,}
+    \DataTypeTok{bg =} \StringTok{"transparent"}\NormalTok{)}
+
+\KeywordTok{plot}\NormalTok{(g3)}
+
+\KeywordTok{dev.off}\NormalTok{() ->}\StringTok{ }\NormalTok{trashcan}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{p4 <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(tmp, }\DataTypeTok{height=}\DecValTok{480}\NormalTok{, }\DataTypeTok{width=}\DecValTok{480}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{6}\NormalTok{]) +}
+\StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{10}\NormalTok{]) +}
+\StringTok{  }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{Event, }\DataTypeTok{y=} \NormalTok{Crop, }\DataTypeTok{fill=} \StringTok{"manual"}\NormalTok{, }\DataTypeTok{colour =} \StringTok{"manual"}\NormalTok{) +}
+\StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{stat=}\StringTok{"identity"}\NormalTok{) +}
+\StringTok{  }\KeywordTok{coord_flip}\NormalTok{() +}\StringTok{ }
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
+\StringTok{  }\KeywordTok{ggtitle}\NormalTok{(}\KeywordTok{paste}\NormalTok{(}\StringTok{"Crop Damage}\CharTok{\textbackslash{}n}\StringTok{"}\NormalTok{, }\StringTok{"(Millions-$)"}\NormalTok{)) +}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{)}
+
+\CommentTok{# give a look&fell like The Wall Street Journal use ... }
+\NormalTok{g4 <-}\StringTok{ }\NormalTok{p4 +}\StringTok{ }
+\StringTok{  }\KeywordTok{theme_wsj}\NormalTok{() +}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{)}
+
+\CommentTok{# save the plot }
+\KeywordTok{png}\NormalTok{(}\DataTypeTok{file =} \StringTok{"./myproject2_files/figure-latex/plot4.png"}\NormalTok{, }
+    \DataTypeTok{width =} \DecValTok{480}\NormalTok{, }
+    \DataTypeTok{height =} \DecValTok{480}\NormalTok{, }
+    \DataTypeTok{units =} \StringTok{"px"}\NormalTok{, }
+    \DataTypeTok{pointsize =} \DecValTok{12}\NormalTok{,}
+    \DataTypeTok{bg =} \StringTok{"transparent"}\NormalTok{)}
+
+\KeywordTok{plot}\NormalTok{(g4)}
+
+\KeywordTok{dev.off}\NormalTok{() ->}\StringTok{ }\NormalTok{trashcan}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# show the plot of injured and losses human }
+\CommentTok{# as figure 2.}
+\CommentTok{# Note, the figure caption is in the heading of the correspondent chunk }
+\KeywordTok{multiplot}\NormalTok{(g4, g3, }\DataTypeTok{cols=}\DecValTok{2}\NormalTok{)}
+
+\CommentTok{# save it}
+\KeywordTok{png}\NormalTok{(}\DataTypeTok{file =} \StringTok{"./myproject2_files/figure-latex/PlotTwo.png"}\NormalTok{, }
+    \DataTypeTok{width =} \DecValTok{960}\NormalTok{, }
+    \DataTypeTok{height =} \DecValTok{480}\NormalTok{, }
+    \DataTypeTok{units =} \StringTok{"px"}\NormalTok{, }
+    \DataTypeTok{pointsize =} \DecValTok{12}\NormalTok{,}
+    \DataTypeTok{bg =} \StringTok{"transparent"}\NormalTok{)}
+
+\KeywordTok{multiplot}\NormalTok{(g4, g3, }\DataTypeTok{cols=}\DecValTok{2}\NormalTok{)}
+
+\KeywordTok{dev.off}\NormalTok{() ->}\StringTok{ }\NormalTok{trashcan}
+\end{Highlighting}
+\end{Shaded}
+
+
+
+
+
+\newpage
+
+# Appendix B
+
+The purpose of this addition is to provide an easy way to completely replicate the project, not only the calculations, tables and images, but also to get the final PDF file. 
+
+We start by indicating the environment and the software versions we used.
+
+\begin{itemize}\raggedright
+  \item R version 3.1.1 (2014-07-10), \verb|i386-w64-mingw32|
+  \item Locale: \verb|LC_COLLATE=English_United States.1252|, \verb|LC_CTYPE=English_United States.1252|, \verb|LC_MONETARY=English_United States.1252|, \verb|LC_NUMERIC=C|, \verb|LC_TIME=English_United States.1252|
+  \item Base packages: base, datasets, graphics, grDevices, grid,
+    methods, stats, utils
+  \item Other packages: ggplot2~1.0.0, ggthemes~1.7.0, gtable~0.1.2,
+    knitr~1.6, plyr~1.8.1, xtable~1.7-3
+  \item Loaded via a namespace (and not attached): colorspace~1.2-4,
+    digest~0.6.4, evaluate~0.5.5, formatR~0.10, MASS~7.3-33,
+    munsell~0.4.2, proto~0.3-10, Rcpp~0.11.2, reshape2~1.4,
+    rmarkdown~0.1.23, scales~0.2.4, stringr~0.6.2, tools~3.1.1,
+    yaml~2.1.13
+  \item RStudio Version 0.98.726
+\end{itemize}
+
+Some times there are troubles to get access to RPubs.com ---as it was the case for this submission, being impossible to get upload a HTML file--- so to produce a PDF that can be upload basically anyway was the decision for the submission of this project. We was alerted, already, in the instruction for the project:
+
+>**NOTE**[@peng_storm]**:** If you are having trouble connecting with RPubs due to proxy-related or other issues, you can upload your final analysis document file as a PDF to Coursera instead.
+
+There are several files in the repository where to download all of them to inspect, run or even used discretionally.
+
+- *default.tex* is the LaTeX template to use. It has two minor changes with respect to the original that RStudio + Knit + Rmarkdown install at origin. The first is an additional library in the preamble `\usepackage{booktabs}` to use if needed ---as in our case--- for the construction of LaTeX tables with the function xtable(). If reader do not desire to make this change in the default.tex can use the R code as showed for the table: `myLatexTable <- print(xtable(tmpTABLE, caption=myCaption), type='latex', comment = FALSE)` with a minimum change with respect the one showed in this report that made use of `booktabs=TRUE` as an additional option in the xtable() aformentioned and also was scaled to give a better look, resulting finally as: `myLatexTable <- print(xtable(tmpTABLE, caption=myCaption), type='latex', booktabs=TRUE, comment = FALSE, scalebox=0.75)`. The second change is relate to have the possibility to change the name of the 'abstract' to any other tittle as in our case to 'Synopsis'. That was 
+done by a new variable for the heading of the Yaml style in the beggining of the Rmarkdown document called `abstract-title` giving the final code where the lines 162, 163 and 164 were added to the original file ---again, if reader do not want to touch the original template can remove or comment the line `abstract-title: Synopsis` in the Rmarkdown heading:
+
+
+>>>```
+. . .
+ 161 $if(abstract)$
+*162 $if(abstract-title)$
+*163 \renewcommand{\abstractname}{$abstract-title$}
+*164 $endif$
+ 165 \begin{abstract}
+ 166 $abstract$
+ 167 \end{abstract}
+ 168 $endif$
+. . . 
+```
+
+- _proj2.Rmd_ is the productor of this project and this file, is a long one due, basically, to the incorparation of the full list of the R-code in [§ Appendix A](#appendix-a). The latter was made by copy/paste the whole code after the generation of the final .tex file from the original chunks inside the document with the `echo=TRUE` option, then, the option was changed to `echo=FALSE` in order to make a fluent writing without any chunk code in between. \newline{}Only one manual edition was done. It's related to the references or works cited; any tool ---bibliatex, natbib or the one used in this  file pandoc-citedpro--- usually insert the citations at the end of the documents. Latex normally need several ---normally three--- manual instructed compilations to get everything in place the document. With the pandoc-citepro, incorporated in the Rstudio installation with the knit and Rmarkdown libraries, the citations are edited inside the .tex file, so, we can copy and move it in any other place, for example above the first appendix, without any trouble in the compilation time of the final PDF. The resulting bibliography is not as good looking as the one obtained directly from the latex packages bibliatex or natbib but it is easy, clean and sufficiently good with the fantastic value-add to be move very easy any place inside the document.\newline{} The bibliography items are also edited inside the own .Rmarkdown file with a pure Yaml heading style.
+
+
+Those files are located in this [GitHub](<https://github.com/EduardoDiezBaez/RepData_PeerAssessment2>) repository and also the PDF submited and maybe some other extra of last time.
+
+
+
+
+
+\tiny{ (ACM citation style)}
+\normalsize
+\setlength{\parindent}{-0.40cm}
+\indent
+
+
+---
+references:
+- title-short: DATABASE
+  genre: database
+  title: 'Storm data for peer assessment 2 - Course: Reproducible Research.
+    (restricted access, only for COURSERA students)'
+  id: peng_storm
+  issued:
+    date-parts:
+    - - 2014
+  author:
+  - given: Roger D.
+    family: Peng
+  - given: Jeff
+    family: Leek
+  - given: Brian
+    family: Caffo
+  accessed:
+    date-parts:
+    - - 2014
+      - 7
+      - 10
+  publisher: COURSERA; Jhons Hopkins University. Restricted Access to COURSERA students of the course
+  URL: https://class.coursera.org/repdata-004/human_grading/view/courses/972143/assessments/4/submissions
+  type: webpage
+- title: Severe Weather Data
+  id: severe
+  issued:
+    date-parts:
+    - - 2012
+  author:
+  - given: 
+    family: National Climatic Data Center
+  accessed:
+    date-parts:
+    - - 2014
+      - 7
+      - 15
+  publisher: "NOAA National Climatic Data Center (NCDC)"
+  URL: http://www.ncdc.noaa.gov/data-access/severe-weather
+  type: webpage
+- title: Multiple Graphs On One Page (ggplot2). FUNCTION CODE OF MULTIPLOT
+  id: cookbook_R
+  issued:
+    date-parts:
+    - - 2014
+  author:
+  - given: Cookbook-
+    family: R
+  accessed:
+    date-parts:
+    - - 2014
+      - 7
+      - 17
+  URL: http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
+  type: webpage
+- title: CODEBOOK. NATIONAL WEATHER SERVICE INSTRUCTION 10-1605
+  id: macaloney_codebook
+  issued:
+    date-parts:
+    - - 2007
+      - 8
+  author:
+  - given: B
+    family: MacAloney
+  - given: R
+    family: McLeod
+  accessed:
+    date-parts:
+    - - 2014
+      - 7
+      - 10
+  publisher: "NOAA National Climatic Data Center (NCDC)"
+  URL: http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf
+  type: webpage
+- note: "U.S. National Oceanic and Atmospheric Administration"
+  title: Storm database.
+  id: noaastorm2012
+  issued:
+    date-parts:
+    - - 2012
+  author:
+  - literal: NOAA
+  accessed:
+    date-parts:
+    - - 2014
+      - 7
+      - 10
+  URL: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2
+  type: webpage
+---
+
+
+
