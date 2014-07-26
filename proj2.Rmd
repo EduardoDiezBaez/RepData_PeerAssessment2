@@ -645,6 +645,9 @@ The last figure shows the events with the greatest economic consequences where f
 
 # Appendix A
 
+\setlength{\parindent}{0.0cm}
+\indent
+
 The code that is reproduced below should fully play the manipulation of data, calculations and presentation of the table and the two images used in this report. The code is not intended neither to be nice nor efficient, just get the desired results  by giving answer the following two questions; across the United States, which types of events are most harmful with respect to population health, and which have the greatest economic consequences.
 
 
