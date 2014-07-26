@@ -2,7 +2,7 @@
 title: 
     "Severe Weather Events in the United States: \\newline{} Decisive Reasons"
 author:
-    "Eduardo B. DÃ­ez"
+    "Eduardo B. Díez"
 date: "July 23, 2014"
 output:
   pdf_document:
@@ -59,18 +59,13 @@ abstract: |
 
 This report relates to explore the NOAA [@severe] Storm Database looking for  those weather events that are detrimental to population's health as well as those who have the greatest economic consequences. 
 
->>Few variables from the dataset were used and transformed to obtain a wide table, with which to display a couple of plots giving response to the issues this report deals. So, the output of the R-code developed and included in [Â§ Data Processing](#datapro), is conformed by one table and two plots that the interested reader could find at [Â§ Results](#results)
+Few variables from the dataset were used and transformed to obtain a wide table, with which to display a couple of plots giving response to the issues this report deals. So, the output of the R-code developed and included in [§ Data Processing](#datapro), is conformed by one table and two plots that the interested reader could find at [§ Results](#results)
 
-To complete the Peer Assessment 2 as requested for the course __Reproducible Research__ by Roger D. Peng, Jeff Leek and Brian Caffo was used the [RStudio](<http://www.rstudio.com/>) 
+To complete the Peer Assessment 2 as requested for the course __Reproducible Research__ by Roger D. Peng, Jeff Leek and Brian Caffo was used the [RStudio](<http://www.rstudio.com/>) markdown facilities to generate PDFs files ---this one you  are reading now--- directly from RStudio with [Rmarkdown](<http://rmarkdown.rstudio.com/>) with [Knitr](<http://cran.rstudio.com/web/packages/knitr/index.html>) and the additional installation of [MiK$\TeX$](<http://miktex.org/>) ---a $\LaTeX$ flavor for Windows systems--- that RStudio use to create a .tex fil e $\LaTeX$ starting from a .Rmd file[^*] that knit convert into a .md file, and then, [pandoc](<https://github.com/jgm/pandoc/releases>) convert the .md into a .tex file and finally, MiK$\TeX$ construc a PDFs output file from the .tex. All this process from inside RStudio.
 
-markdown facilities to generate PDFs files, like this one you  are reading now, directly from
+Additionally, and knowing that it is not necessary, the [§ Appendix B](#appendix-b) has  relevant information about the repository from where to download  the Rmarkdown file used to obtain this PDF file the reader is reading now, as well as relates to the latex template used for its construction. Thus, not only the results but also the report itself is reproducible.
 
-RStudio with [Rmarkdown](<http://rmarkdown.rstudio.com/>) with [Knitr](<http://cran.rstudio.com/web/packages/knitr/index.html>) and the additional installation of [MiK$\TeX$](<http://miktex.org/>)
-a $\LaTeX$ flavor for Windows systems that RStudio use to create a .tex fil e $\LaTeX$ starting from a .Rmd file[^*] that knit convert into a .md file, and then, [pandoc](<https://github.com/jgm/pandoc/releases>) convert the .md into a .tex file and finally, MiK$\TeX$ construc a PDFs output file from the .tex. All this process from inside RStudio.
-
-Additionally, and knowing that it is not necessary, the Appendix B has  relevant information about the repository from where to download  the Rmarkdown file used to obtain this PDF file the reader is reading now, as well as relates to the latex template used for its construction. Thus, not only the results but also the report itself is reproducible.
-
-[^*]: See [Â§ Appendix B](#appendix-b) to get the full listing of the Rmarkdown file used to obtain this pdf. Readers should be able to reproduce this report.
+[^*]: See [§ Appendix B](#appendix-b) to get the full listing of the Rmarkdown file used to obtain this pdf. Readers should be able to reproduce this report.
 
 # Data \label{data}
 
@@ -131,7 +126,7 @@ These last two new variables, are going to be used by summing their values group
 
 Continuing to build a wide table that contains the most relevant, the former for health-related and the latter to economic events. In the first case by grouping the events with at least 100 victims and the last with losses of at least $ 1 million in crops. Thus, we are now ready to obtain and display the Table 1, Figure 1 and Figure 2
 
-In order to allow a more fluent reading of this report, the complete code was moved to [Â§ Appendix A](#appendix-a), where readers can easily copy/paste and get the table and figures mentioned above. Worth warn that the process of loading and manipulation of data is a time consuming process, leading to need several minutes to complete.
+In order to allow a more fluent reading of this report, the complete code was moved to [§ Appendix A](#appendix-a), where readers can easily copy/paste and get the table and figures mentioned above. Worth warn that the process of loading and manipulation of data is a time consuming process, leading to need several minutes to complete.
 
 
 
@@ -1210,8 +1205,8 @@ We start by indicating the environment and the software versions we used.
   \item Other packages: ggplot2~1.0.0, ggthemes~1.7.0, gtable~0.1.2,
     knitr~1.6, plyr~1.8.1, xtable~1.7-3
   \item Loaded via a namespace (and not attached): colorspace~1.2-4,
-    digest~0.6.4, evaluate~0.5.5, formatR~0.10, MASS~7.3-33,
-    munsell~0.4.2, proto~0.3-10, Rcpp~0.11.2, reshape2~1.4,
+    digest~0.6.4, evaluate~0.5.5, formatR~0.10, labeling~0.2,
+    MASS~7.3-33, munsell~0.4.2, proto~0.3-10, Rcpp~0.11.2, reshape2~1.4,
     rmarkdown~0.1.23, scales~0.2.4, stringr~0.6.2, tools~3.1.1,
     yaml~2.1.13
   \item RStudio Version 0.98.726
@@ -1240,7 +1235,7 @@ done by a new variable for the heading of the Yaml style in the beggining of the
 . . . 
 ```
 
-- _proj2.Rmd_ is the productor of this project and this file, is a long one due, basically, to the incorparation of the full list of the R-code in [Â§ Appendix A](#appendix-a). The latter was made by copy/paste the whole code after the generation of the final .tex file from the original chunks inside the document with the `echo=TRUE` option, then, the option was changed to `echo=FALSE` in order to make a fluent writing without any chunk code in between. \newline{}Only one manual edition was done. It's related to the references or works cited; any tool ---bibliatex, natbib or the one used in this  file pandoc-citedpro--- usually insert the citations at the end of the documents. Latex normally need several ---normally three--- manual instructed compilations to get everything in place the document. With the pandoc-citepro, incorporated in the Rstudio installation with the knit and Rmarkdown libraries, the citations are edited inside the .tex file, so, we can copy and move it in any other place, for example above the first appendix, without any trouble in the compilation time of the final PDF. The resulting bibliography is not as good looking as the one obtained directly from the latex packages bibliatex or natbib but it is easy, clean and sufficiently good with the fantastic value-add to be move very easy any place inside the document.\newline{} The bibliography items are also edited inside the own .Rmarkdown file with a pure Yaml heading style.
+- _proj2.Rmd_ is the productor of this project and this file, is a long one due, basically, to the incorparation of the full list of the R-code in [§ Appendix A](#appendix-a). The latter was made by copy/paste the whole code after the generation of the final .tex file from the original chunks inside the document with the `echo=TRUE` option, then, the option was changed to `echo=FALSE` in order to make a fluent writing without any chunk code in between. \newline{}Only one manual edition was done. It's related to the references or works cited; any tool ---bibliatex, natbib or the one used in this  file pandoc-citedpro--- usually insert the citations at the end of the documents. Latex normally need several ---normally three--- manual instructed compilations to get everything in place the document. With the pandoc-citepro, incorporated in the Rstudio installation with the knit and Rmarkdown libraries, the citations are edited inside the .tex file, so, we can copy and move it in any other place, for example above the first appendix, without any trouble in the compilation time of the final PDF. The resulting bibliography is not as good looking as the one obtained directly from the latex packages bibliatex or natbib but it is easy, clean and sufficiently good with the fantastic value-add to be move very easy any place inside the document.\newline{} The bibliography items are also edited inside the own .Rmarkdown file with a pure Yaml heading style.
 
 
 Those files are located in this [GitHub](<https://github.com/EduardoDiezBaez/RepData_PeerAssessment2>) repository and also the PDF submited and maybe some other extra of last time.
