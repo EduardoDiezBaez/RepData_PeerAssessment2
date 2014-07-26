@@ -227,7 +227,10 @@ myNOAA$BGN_YEAR <- format(as.Date(BGN_DATE, format = "%m/%d/%Y"), "%Y")
 myNOAA$PROPEXP <- PROPDMGEXP
 
 # actual levels of PROPDMGEXP =
-# ""  "-" "?" "+" "0" "1" "2" "3" "4" "5" "6" "7" "8" "B" "h" "H" "K" "m" "M"
+# ""  "-" "?" "+" 
+# "0" "1" "2" "3" "4" 
+# "5" "6" "7" "8"
+# "B" "h" "H" "K" "m" "M"
 
 # but we want to be =
 niveles <-c("0", "0", "0", "0", 
@@ -257,21 +260,26 @@ myNOAA$PROP <- myNOAA$PROP/billion
 #
 myNOAA$CROPEXP <- CROPDMGEXP
 
-# actual levels of PROPDMGEXP =
-# ""  "?" "0" "2" "B" "k" "K" "m" "M"
+# actual levels of CROPDMGEXP =
+# ""  "?" 
+# "0" "2" 
+# "B" "k" "K" "m" "M"
 # but we want  =
 niveles <-c("0", "0", 
             "1", "100", 
             "1000000000", "1000", "1000","1000000","1000000")
 
-# so, do it, as we did it above ...
+# so, do it, 
 levels(myNOAA$CROPEXP) <- niveles
+
+# as we did it above ...
 myNOAA$CROPEXP <- as.character(myNOAA$CROPEXP)
 myNOAA$CROPEXP <- as.numeric(myNOAA$CROPEXP)
 
 # calculate the value in millions of dollars and save it as a new variable
 myNOAA$CROP <- CROPDMG * myNOAA$CROPEXP
 myNOAA$CROP <- myNOAA$CROP / million
+
 # no more attachment
 detach(myNOAA)
 ```
@@ -422,7 +430,6 @@ p1 <- ggplot(tmp, height=480, width=480) +
   aes(x=Event, y= Fatalities, fill= "manual", colour = "manual") +
   geom_bar(stat="identity") +
   coord_flip() + 
-  theme(legend.position="none") + 
   xlab("") + 
   ylab("") + 
   ggtitle(paste("Human Losses","\n")) +
@@ -455,7 +462,6 @@ p2 <- ggplot(tmp, height=480, width=480) +
   aes(x=Event, y= Injuries, fill= "manual", colour = "manual") +
   geom_bar(stat="identity") +
   coord_flip() + 
-  theme(legend.position="none") + 
   xlab("") + 
   ylab("") + 
   ggtitle(paste("Injured People","\n")) +
@@ -485,6 +491,7 @@ dev.off() -> trashcan
 # show the plot of injured and losses human 
 # as figure 1.
 # Note, the figure caption is in the heading of the correspondent chunk
+# also the chunk save the image as a pdf.
 multiplot(g1, g2, cols=2)
 
 # save it
@@ -503,6 +510,7 @@ dev.off() -> trashcan
 ```{r plot3, warning=FALSE, message=FALSE, eval=TRUE, echo=FALSE }
 
 MinimumCropDamage <- 1
+
 tmp <- myDataEvent[tmp$Crop > MinimumCropDamage, ]
 
 tmp <- droplevels(tmp)
@@ -510,7 +518,6 @@ tmp <- droplevels(tmp)
 # re-order the data with crop damages
 
 require(plyr)
-
 
 tmp$Event <- factor(tmp$Event,
                     levels= tmp[order(tmp$Crop), ]$Event)
@@ -525,7 +532,6 @@ p3 <- ggplot(tmp, height=480, width=480) +
   aes(x=Event, y= Property, fill= "manual", colour = "manual") +
   geom_bar(stat="identity") +
   coord_flip() + 
-  theme(legend.position="none") + 
   xlab("") + 
   ylab("") + 
   ggtitle(paste("Property Damage\n", "(Billions-$)")) +
@@ -559,7 +565,6 @@ p4 <- ggplot(tmp, height=480, width=480) +
   aes(x=Event, y= Crop, fill= "manual", colour = "manual") +
   geom_bar(stat="identity") +
   coord_flip() + 
-  theme(legend.position="none") + 
   xlab("") + 
   ylab("") + 
   ggtitle(paste("Crop Damage\n", "(Millions-$)")) +
@@ -586,9 +591,11 @@ dev.off() -> trashcan
 
 ```{r ThePlotTwo, eval=FALSE, fig.height= 6, fig.width=12, warning=FALSE, message=FALSE,  fig.cap= "Events are sorted by the $ (million or billion) amount of damages in crop, with a minimum of one million dollars, showing the total sum of damage in properties and crops, from 1950 to 2011." , echo=FALSE}
 
-# show the plot of injured and losses human 
+# show the plot of properties and crops damages 
 # as figure 2.
 # Note, the figure caption is in the heading of the correspondent chunk 
+# also the chunk save the image as a pdf.
+
 multiplot(g4, g3, cols=2)
 
 # save it
@@ -655,7 +662,6 @@ The code that is reproduced below should fully play the manipulation of data, ca
 # the full listing R code 
 ```
 
-
 \begin{Shaded}
 \begin{Highlighting}[]
 \CommentTok{# Getting & loading the data}
@@ -681,14 +687,8 @@ The code that is reproduced below should fully play the manipulation of data, ca
                                   \StringTok{"PROPDMGEXP"}\NormalTok{,}
                                   \StringTok{"CROPDMG"}\NormalTok{,}
                                   \StringTok{"CROPDMGEXP"}\NormalTok{))}
-\end{Highlighting}
-\end{Shaded}
 
 
-
-
-\begin{Shaded}
-\begin{Highlighting}[]
 \NormalTok{####################}
 \NormalTok{##### function multiplot}
 \NormalTok{####################}
@@ -744,14 +744,7 @@ The code that is reproduced below should fully play the manipulation of data, ca
 \NormalTok{####################}
 \NormalTok{##### End of function multiplot}
 \NormalTok{####################}
-\end{Highlighting}
-\end{Shaded}
 
-
-
-
-\begin{Shaded}
-\begin{Highlighting}[]
 \CommentTok{# attach the dataset so we don't need to write large names}
 \KeywordTok{attach}\NormalTok{(myNOAA)}
 
@@ -762,7 +755,10 @@ The code that is reproduced below should fully play the manipulation of data, ca
 \NormalTok{myNOAA$PROPEXP <-}\StringTok{ }\NormalTok{PROPDMGEXP}
 
 \CommentTok{# actual levels of PROPDMGEXP =}
-\CommentTok{# ""  "-" "?" "+" "0" "1" "2" "3" "4" "5" "6" "7" "8" "B" "h" "H" "K" "m" "M"}
+\CommentTok{# ""  "-" "?" "+" }
+\CommentTok{# "0" "1" "2" "3" "4" }
+\CommentTok{# "5" "6" "7" "8"}
+\CommentTok{# "B" "h" "H" "K" "m" "M"}
 
 \CommentTok{# but we want to be =}
 \NormalTok{niveles <-}\KeywordTok{c}\NormalTok{(}\StringTok{"0"}\NormalTok{, }\StringTok{"0"}\NormalTok{, }\StringTok{"0"}\NormalTok{, }\StringTok{"0"}\NormalTok{, }
@@ -792,32 +788,29 @@ The code that is reproduced below should fully play the manipulation of data, ca
 \CommentTok{#}
 \NormalTok{myNOAA$CROPEXP <-}\StringTok{ }\NormalTok{CROPDMGEXP}
 
-\CommentTok{# actual levels of PROPDMGEXP =}
-\CommentTok{# ""  "?" "0" "2" "B" "k" "K" "m" "M"}
+\CommentTok{# actual levels of CROPDMGEXP =}
+\CommentTok{# ""  "?" }
+\CommentTok{# "0" "2" }
+\CommentTok{# "B" "k" "K" "m" "M"}
 \CommentTok{# but we want  =}
 \NormalTok{niveles <-}\KeywordTok{c}\NormalTok{(}\StringTok{"0"}\NormalTok{, }\StringTok{"0"}\NormalTok{, }
             \StringTok{"1"}\NormalTok{, }\StringTok{"100"}\NormalTok{, }
             \StringTok{"1000000000"}\NormalTok{, }\StringTok{"1000"}\NormalTok{, }\StringTok{"1000"}\NormalTok{,}\StringTok{"1000000"}\NormalTok{,}\StringTok{"1000000"}\NormalTok{)}
 
-\CommentTok{# so, do it, as we did it above ...}
+\CommentTok{# so, do it, }
 \KeywordTok{levels}\NormalTok{(myNOAA$CROPEXP) <-}\StringTok{ }\NormalTok{niveles}
+
+\CommentTok{# as we did it above ...}
 \NormalTok{myNOAA$CROPEXP <-}\StringTok{ }\KeywordTok{as.character}\NormalTok{(myNOAA$CROPEXP)}
 \NormalTok{myNOAA$CROPEXP <-}\StringTok{ }\KeywordTok{as.numeric}\NormalTok{(myNOAA$CROPEXP)}
 
 \CommentTok{# calculate the value in millions of dollars and save it as a new variable}
 \NormalTok{myNOAA$CROP <-}\StringTok{ }\NormalTok{CROPDMG *}\StringTok{ }\NormalTok{myNOAA$CROPEXP}
 \NormalTok{myNOAA$CROP <-}\StringTok{ }\NormalTok{myNOAA$CROP /}\StringTok{ }\NormalTok{million}
+
 \CommentTok{# no more attachment}
 \KeywordTok{detach}\NormalTok{(myNOAA)}
-\end{Highlighting}
-\end{Shaded}
 
-
-
-
-
-\begin{Shaded}
-\begin{Highlighting}[]
 \CommentTok{# goupe the data by EVTYPE summming the fatal cases}
 \NormalTok{fatalEvent <-}\StringTok{ }\KeywordTok{aggregate}\NormalTok{(FATALITIES ~}\StringTok{ }\NormalTok{EVTYPE, myNOAA, sum)}
 
@@ -842,65 +835,7 @@ The code that is reproduced below should fully play the manipulation of data, ca
 \CommentTok{# save the data in the local disc}
 \KeywordTok{write.table}\NormalTok{(myNOAA, }\StringTok{"./myNOAA.txt"}\NormalTok{, }\DataTypeTok{sep=}\StringTok{"}\CharTok{\textbackslash{}t}\StringTok{"}\NormalTok{)}
 \KeywordTok{write.table}\NormalTok{(FullData, }\StringTok{"./FullData.txt"}\NormalTok{, }\DataTypeTok{sep=}\StringTok{"}\CharTok{\textbackslash{}t}\StringTok{"}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
 
-
-
-
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{# Load the required libraries to plot and make the latex/HTML table}
-\KeywordTok{require}\NormalTok{(ggthemes)}
-\KeywordTok{require}\NormalTok{(grid)}
-\KeywordTok{require}\NormalTok{(gtable)}
-\KeywordTok{require}\NormalTok{(xtable)}
-
-\CommentTok{# and the libraries to format the outputs from this own Rmarkdown file }
-\CommentTok{# to incorporate the table printout as a latex commands to be printed as }
-\CommentTok{# part of this file aoutput.}
-\CommentTok{# Note, that the output could be also as a HTML format.}
-\KeywordTok{require}\NormalTok{(plyr)}
-\KeywordTok{require}\NormalTok{(knitr)}
-
-\CommentTok{# in order to show data in table and plots, we choose the minimum cases }
-\CommentTok{# for the healt affected as the sum of fatal and injuries cases.}
-\CommentTok{# for this analysis the value will be 100 persons as minimum.}
-
-\NormalTok{myDataEvent <-}\StringTok{ }\NormalTok{FullData}
-\NormalTok{MinimumPeopleAfected <-}\StringTok{ }\DecValTok{100}
-\NormalTok{myDataEvent <-}\StringTok{ }\NormalTok{myDataEvent[myDataEvent$FATALITIES >}\StringTok{ }\NormalTok{MinimumPeopleAfected, ]}
-
-\NormalTok{myDataEvent <-}\StringTok{ }\KeywordTok{droplevels}\NormalTok{(myDataEvent)}
-
-\CommentTok{# prepare to table}
-\KeywordTok{names}\NormalTok{(myDataEvent) <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"Event"}\NormalTok{,}\StringTok{"Fatalities"}\NormalTok{, }\StringTok{"Injuries"}\NormalTok{, }\StringTok{"Property(B$)"}\NormalTok{, }\StringTok{"Crop(M$)"}\NormalTok{)}
-
-\CommentTok{# re-order the dataframe to be tabulated and convert num into integers}
-\CommentTok{# to show them in table}
-
-\NormalTok{tmp <-}\StringTok{ }\KeywordTok{arrange}\NormalTok{(myDataEvent, -Fatalities)}
-\NormalTok{tmp$Fatalities <-}\StringTok{ }\KeywordTok{as.integer}\NormalTok{(tmp$Fatalities)}
-\NormalTok{tmp$Injuries <-}\StringTok{ }\KeywordTok{as.integer}\NormalTok{(tmp$Injuries)}
-
-\NormalTok{myCaption =}\StringTok{ 'Sed nec mi tincidunt, feugiat arcu ac, malesuada mauris. Suspendisse et scelerisque erat. Phasellus vitae risus at justo tincidunt posuere. Fusce eget nisi a justo ullamcorper condimentum.'}
-
-\NormalTok{tmpTABLE <-}\StringTok{ }\NormalTok{tmp}
-
-\NormalTok{myLatexTable <-}\StringTok{ }\KeywordTok{print}\NormalTok{(}\KeywordTok{xtable}\NormalTok{(tmpTABLE, }\DataTypeTok{caption=}\NormalTok{myCaption),}
-                      \DataTypeTok{type=}\StringTok{'latex'}\NormalTok{, }
-                      \DataTypeTok{comment =} \OtherTok{FALSE}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-
-
-
-
-
-\begin{Shaded}
-\begin{Highlighting}[]
 \CommentTok{# Load the required libraries to plot and make the latex table}
 \KeywordTok{require}\NormalTok{(ggthemes)}
 \KeywordTok{require}\NormalTok{(grid)}
@@ -949,18 +884,26 @@ The code that is reproduced below should fully play the manipulation of data, ca
 \NormalTok{myLatexTable <-}\StringTok{ }\KeywordTok{print}\NormalTok{(}\KeywordTok{xtable}\NormalTok{(tmpTABLE, }\DataTypeTok{caption=}\NormalTok{myCaption),}
                       \DataTypeTok{type=}\StringTok{'latex'}\NormalTok{, }
                       \DataTypeTok{comment =} \OtherTok{FALSE}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
 
+\CommentTok{# prepare to plot}
+\KeywordTok{names}\NormalTok{(myDataEvent) <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"Event"}\NormalTok{,}
+                        \StringTok{"Fatalities"}\NormalTok{, }
+                        \StringTok{"Injuries"}\NormalTok{, }
+                        \StringTok{"Property"}\NormalTok{, }
+                        \StringTok{"Crop"}\NormalTok{)}
 
+\NormalTok{tmp <-}\StringTok{ }\KeywordTok{arrange}\NormalTok{(myDataEvent, -Fatalities)}
+\NormalTok{tmp$Fatalities <-}\StringTok{ }\KeywordTok{as.integer}\NormalTok{(tmp$Fatalities)}
+\NormalTok{tmp$Injuries <-}\StringTok{ }\KeywordTok{as.integer}\NormalTok{(tmp$Injuries)}
+\NormalTok{tmp <-}\StringTok{ }\NormalTok{myDataEvent}
 
+\NormalTok{tmp$Event <-}\StringTok{ }\KeywordTok{factor}\NormalTok{(tmp$Event, }
+                    \DataTypeTok{levels=} \NormalTok{tmp[}\KeywordTok{order}\NormalTok{(tmp$Fatalities), ]$Event)}
 
+\NormalTok{myorder <-}\StringTok{ }\KeywordTok{levels}\NormalTok{(tmp$Event)}
 
+\NormalTok{tmp$Event <-}\StringTok{ }\KeywordTok{factor}\NormalTok{(tmp$Event, }\DataTypeTok{levels=}\NormalTok{myorder, }\DataTypeTok{ordered=}\OtherTok{TRUE}\NormalTok{)}
 
-
-
-\begin{Shaded}
-\begin{Highlighting}[]
 \CommentTok{# Load the required libraries to plot and make the latex/HTML table}
 \KeywordTok{require}\NormalTok{(ggthemes)}
 \KeywordTok{require}\NormalTok{(grid)}
@@ -992,18 +935,13 @@ The code that is reproduced below should fully play the manipulation of data, ca
                \NormalTok{RedddishPurple,}
                \NormalTok{GrayGGplot,}
                \NormalTok{SalmonWSJ)}
-\end{Highlighting}
-\end{Shaded}
 
-\begin{Shaded}
-\begin{Highlighting}[]
 \NormalTok{p1 <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(tmp, }\DataTypeTok{height=}\DecValTok{480}\NormalTok{, }\DataTypeTok{width=}\DecValTok{480}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{7}\NormalTok{]) +}
 \StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{10}\NormalTok{]) +}
 \StringTok{  }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{Event, }\DataTypeTok{y=} \NormalTok{Fatalities, }\DataTypeTok{fill=} \StringTok{"manual"}\NormalTok{, }\DataTypeTok{colour =} \StringTok{"manual"}\NormalTok{) +}
 \StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{stat=}\StringTok{"identity"}\NormalTok{) +}
 \StringTok{  }\KeywordTok{coord_flip}\NormalTok{() +}\StringTok{ }
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{ggtitle}\NormalTok{(}\KeywordTok{paste}\NormalTok{(}\StringTok{"Human Losses"}\NormalTok{,}\StringTok{"}\CharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)) +}
@@ -1026,18 +964,13 @@ The code that is reproduced below should fully play the manipulation of data, ca
 \KeywordTok{plot}\NormalTok{(g1)}
 
 \KeywordTok{dev.off}\NormalTok{() ->}\StringTok{ }\NormalTok{trashcan}
-\end{Highlighting}
-\end{Shaded}
 
-\begin{Shaded}
-\begin{Highlighting}[]
 \NormalTok{p2 <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(tmp, }\DataTypeTok{height=}\DecValTok{480}\NormalTok{, }\DataTypeTok{width=}\DecValTok{480}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{2}\NormalTok{]) +}
 \StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{10}\NormalTok{]) +}
 \StringTok{  }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{Event, }\DataTypeTok{y=} \NormalTok{Injuries, }\DataTypeTok{fill=} \StringTok{"manual"}\NormalTok{, }\DataTypeTok{colour =} \StringTok{"manual"}\NormalTok{) +}
 \StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{stat=}\StringTok{"identity"}\NormalTok{) +}
 \StringTok{  }\KeywordTok{coord_flip}\NormalTok{() +}\StringTok{ }
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{ggtitle}\NormalTok{(}\KeywordTok{paste}\NormalTok{(}\StringTok{"Injured People"}\NormalTok{,}\StringTok{"}\CharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)) +}
@@ -1059,14 +992,11 @@ The code that is reproduced below should fully play the manipulation of data, ca
 \KeywordTok{plot}\NormalTok{(g2)}
 
 \KeywordTok{dev.off}\NormalTok{() ->}\StringTok{ }\NormalTok{trashcan}
-\end{Highlighting}
-\end{Shaded}
 
-\begin{Shaded}
-\begin{Highlighting}[]
 \CommentTok{# show the plot of injured and losses human }
 \CommentTok{# as figure 1.}
 \CommentTok{# Note, the figure caption is in the heading of the correspondent chunk}
+\CommentTok{# also the chunk save the image as a pdf.}
 \KeywordTok{multiplot}\NormalTok{(g1, g2, }\DataTypeTok{cols=}\DecValTok{2}\NormalTok{)}
 
 \CommentTok{# save it}
@@ -1080,20 +1010,16 @@ The code that is reproduced below should fully play the manipulation of data, ca
 \KeywordTok{multiplot}\NormalTok{(g1, g2, }\DataTypeTok{cols=}\DecValTok{2}\NormalTok{)}
 
 \KeywordTok{dev.off}\NormalTok{() ->}\StringTok{ }\NormalTok{trashcan}
-\end{Highlighting}
-\end{Shaded}
 
-\begin{Shaded}
-\begin{Highlighting}[]
+
 \NormalTok{MinimumCropDamage <-}\StringTok{ }\DecValTok{1}
+
 \NormalTok{tmp <-}\StringTok{ }\NormalTok{myDataEvent[tmp$Crop >}\StringTok{ }\NormalTok{MinimumCropDamage, ]}
 
 \NormalTok{tmp <-}\StringTok{ }\KeywordTok{droplevels}\NormalTok{(tmp)}
 
 \CommentTok{# re-order the data with crop damages}
-
 \KeywordTok{require}\NormalTok{(plyr)}
-
 
 \NormalTok{tmp$Event <-}\StringTok{ }\KeywordTok{factor}\NormalTok{(tmp$Event,}
                     \DataTypeTok{levels=} \NormalTok{tmp[}\KeywordTok{order}\NormalTok{(tmp$Crop), ]$Event)}
@@ -1108,7 +1034,6 @@ The code that is reproduced below should fully play the manipulation of data, ca
 \StringTok{  }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{Event, }\DataTypeTok{y=} \NormalTok{Property, }\DataTypeTok{fill=} \StringTok{"manual"}\NormalTok{, }\DataTypeTok{colour =} \StringTok{"manual"}\NormalTok{) +}
 \StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{stat=}\StringTok{"identity"}\NormalTok{) +}
 \StringTok{  }\KeywordTok{coord_flip}\NormalTok{() +}\StringTok{ }
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{ggtitle}\NormalTok{(}\KeywordTok{paste}\NormalTok{(}\StringTok{"Property Damage}\CharTok{\textbackslash{}n}\StringTok{"}\NormalTok{, }\StringTok{"(Billions-$)"}\NormalTok{)) +}
@@ -1131,18 +1056,13 @@ The code that is reproduced below should fully play the manipulation of data, ca
 \KeywordTok{plot}\NormalTok{(g3)}
 
 \KeywordTok{dev.off}\NormalTok{() ->}\StringTok{ }\NormalTok{trashcan}
-\end{Highlighting}
-\end{Shaded}
 
-\begin{Shaded}
-\begin{Highlighting}[]
 \NormalTok{p4 <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(tmp, }\DataTypeTok{height=}\DecValTok{480}\NormalTok{, }\DataTypeTok{width=}\DecValTok{480}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{6}\NormalTok{]) +}
 \StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values=}\NormalTok{cbPalette[}\DecValTok{10}\NormalTok{]) +}
 \StringTok{  }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{Event, }\DataTypeTok{y=} \NormalTok{Crop, }\DataTypeTok{fill=} \StringTok{"manual"}\NormalTok{, }\DataTypeTok{colour =} \StringTok{"manual"}\NormalTok{) +}
 \StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{stat=}\StringTok{"identity"}\NormalTok{) +}
 \StringTok{  }\KeywordTok{coord_flip}\NormalTok{() +}\StringTok{ }
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position=}\StringTok{"none"}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{""}\NormalTok{) +}\StringTok{ }
 \StringTok{  }\KeywordTok{ggtitle}\NormalTok{(}\KeywordTok{paste}\NormalTok{(}\StringTok{"Crop Damage}\CharTok{\textbackslash{}n}\StringTok{"}\NormalTok{, }\StringTok{"(Millions-$)"}\NormalTok{)) +}
@@ -1164,14 +1084,12 @@ The code that is reproduced below should fully play the manipulation of data, ca
 \KeywordTok{plot}\NormalTok{(g4)}
 
 \KeywordTok{dev.off}\NormalTok{() ->}\StringTok{ }\NormalTok{trashcan}
-\end{Highlighting}
-\end{Shaded}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{# show the plot of injured and losses human }
+\CommentTok{# show the plot of properties and crops damages }
 \CommentTok{# as figure 2.}
 \CommentTok{# Note, the figure caption is in the heading of the correspondent chunk }
+\CommentTok{# also the chunk save the image as a pdf.}
+
 \KeywordTok{multiplot}\NormalTok{(g4, g3, }\DataTypeTok{cols=}\DecValTok{2}\NormalTok{)}
 
 \CommentTok{# save it}
